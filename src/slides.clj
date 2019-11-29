@@ -292,13 +292,6 @@
 (defmacro render-loop [& forms]
   `(vreset! pendulum-fn (fn [] ~@forms)))
 
-;(defmacro loop! [volatile & forms]
-;  `(let [start-value# (deref ~volatile)]
-;    (future
-;     (while (= start-value# (deref ~volatile))
-;       ~@forms
-;       (Thread/sleep 60)))))
-
 (defn init-pendulum [energy friction]
   (vswap! pendulum-state
           (fn [state]
@@ -374,8 +367,30 @@
         dy1 (- h2 (/ dest-height 2))
         dx2 (+ w2 (/ dest-width 2))
         dy2 (+ h2 (/ dest-height 2))]
-    ;(println sx1 sy1 sx2 sy2 dx1 dy1 dx2 dy2)
     (.drawImage g image dx1 dy1 dx2 dy2 sx1 sy1 sx2 sy2 nil)))
+
+(defn mandelbrot-iterate [r i n]
+  (->> [0 0 n]
+       (iterate (fn [[this-r this-i this-n]]
+                  [(+ (- (* this-r this-r) (* this-i this-i)) r)
+                   (+ (+ (* this-r this-i) (* this-i this-r)) i)
+                   (dec this-n)]))
+       (take-while #(-> % last pos?))))
+
+(defn mandelbrot-step [n r i]
+  (draw-axes)
+  (draw-grid)
+  (proj-texts (* 4 g-scale) -5 -4 :left (str "c = " r " + " i "i") green)
+  (arrow green r (- i) r (- i))
+  (if (> n 1)
+    (let [points (mandelbrot-iterate r i n)
+          steps (partition 2 1 points)
+          [[prev-r prev-i] [current-r current-i]] (last steps)]
+      (doseq [[[ra ia] [rb ib]] steps]
+        (arrow cyan ra (- ia) rb (- ib)))
+      (arrow yellow prev-r (- prev-i) current-r (- current-i))
+      (proj-text (str current-r " + " current-i "i") yellow (* 4 g-scale) current-r (- current-i) :left))
+    (arrow yellow 0 0 0 0)))
 
 (declare render-slide)
 
@@ -385,6 +400,18 @@
     [
 
      (fn [_] (clear-slide))
+
+     (fn [_]
+       (clear-slide)
+       (unproj-text "Peter Westmacott" green (* g-scale 4) (* 5 g-scale) (* 20 g-scale) :left)
+       ;(unproj-text "Twitter: @PMWestmacott, but don't expect any tweets" white (* g-scale 3) (* 5 g-scale) (* 15 g-scale) :left)
+       ;(unproj-text "Facebook: no, thank you." white (* g-scale 3) (* 5 g-scale) (* 20 g-scale) :left)
+       ;(unproj-text "LinkedIn: um, just no." white (* g-scale 3) (* 5 g-scale) (* 25 g-scale) :left)
+
+       (unproj-text "Strategic Blue" (draw/rgb 150 150 255) (* g-scale 4) (* 5 g-scale) (* 35 g-scale) :left)
+       (unproj-text "We can save you money on your Amazon EC2 instances." white (* g-scale 3) (* 5 g-scale) (* 40 g-scale) :left)
+       )
+
      (fn [_]
        (clear-slide)
        (draw-title magenta "" "The" "Mandelbrot" "Set" ""))
@@ -563,6 +590,13 @@
        (arrow white  3.0 -0.3  1.9 1.0)
        (proj-texts (/ height 20) 0 1 :middle
                    "(" white "3" yellow " + " white "-2" yellow ") + (" white "i" yellow " + " white "6i" yellow ")" white )
+
+       (reset-origin!))
+
+     (fn [n]
+       (render-slide (dec n))
+       (set-origin! 0 -0.25)
+
        (arrow white -1.2 1.7 -0.6 3.0)
        (arrow white  1.1 1.7  0.6 3.0)
        (proj-texts (/ height 20) 0 3 :middle "1" yellow " + " white "7i" yellow)
@@ -610,30 +644,43 @@
        (arrow cyan 0 0 3 -1) (proj-text "3 + i" cyan (/ height 20) 3 -1 :left)
        (arrow green 0 0 1 -7) (proj-text "1 + 7i" green (/ height 20) 1 -7 :left)
 
-       (arc-fill white 1 -2 0 -5)
-       (arc-fill white 3 -1 0 -5)
-       (arc-fill white 1 -7 0 -5)
+       (arc-fill (draw/rgb 0 255 255 200) 1.75 0 3 -1)
+       (arc-line (draw/rgb 0 255 255 200) 1.75 0 3 -1)
+       (arc-fill (draw/rgb 255 255 0 200) 1 0 1 -2)
+       (arc-line (draw/rgb 255 255 0 200) 1 0 1 -2)
 
        (reset-origin!)
-       (reset-scale!)
-       )
+       (reset-scale!))
 
-     ; TODO: explain multiplication and addition
+     (fn [n]
+       (render-slide (dec n))
+       (set-scale! 0.9)
+       (set-origin! 0 4)
+
+       (arc-fill (draw/rgb 0 255 255 200) 0.7826 -1.5652 1 -7)
+       (arc-line (draw/rgb 0 255 255 200) 0.7826 -1.5652 1 -7)
+
+       (reset-origin!)
+       (reset-scale!))
+
+     #_(fn [n]
+       (proj-text "Part 1: Recap" yellow (* g-scale 8)  0 -3.5 :middle)
+
+       (proj-text "- Complex numbers are 2-dimensional" yellow (* g-scale 4)  -5 -2 :left)
+       (proj-text "- They have a real part and an imaginary part." yellow (* g-scale 4)  -5 -1 :left)
+       (proj-text "- We can add them and multiply them" yellow (* g-scale 4)  -5 0 :left)
+       (proj-text "- These correspond to transformations" yellow (* g-scale 4)  -5 1 :left)
+       (proj-text "  in 2-dimensional space" yellow (* g-scale 4)  -5 1.5 :left)
+
+       )
 
      (fn [_]
        (clear-slide)
        (draw-title yellow "" "Part 2:" "Strange" "Attractors" ""))
 
      (fn [_]
-       #_(vswap! pendulum-state
-                 (fn [state]
-                   (-> state
-                       (update :angle #(or % 0.35))
-                       (assoc :speed (- 0.35 (or (:angle state) 0.35)))
-                       (assoc :friction 0)
-                       (assoc :dt 0.1))))
        (init-pendulum 0.35 0.0)
-       (render-loop ; current-slide
+       (render-loop
          (step-pendulum)
          (clear-slide)
          (render-pendulum yellow)
@@ -642,7 +689,7 @@
      (fn [_]
        (vreset! phase-space-trail [])
        (init-pendulum 0.35 0.0)
-       (render-loop ;loop! current-slide
+       (render-loop
          (step-pendulum)
          (clear-slide)
          (unproj-text "\"Phase Space\"" yellow (* g-scale 6) (* width 3/4) (* height 1/8) :middle)
@@ -653,14 +700,7 @@
      (fn [_]
        (vreset! phase-space-trail [])
        (init-pendulum 0.35 0.02)
-       #_(vswap! pendulum-state
-                 (fn [state]
-                   (-> state
-                       (update :angle #(or % 0.35))
-                       (update :speed #(or % (- 0.35 (or (:angle state) 0.35))))
-                       (assoc :friction 0.1)
-                       (assoc :dt 0.1))))
-       (render-loop ; current-slide
+       (render-loop
          (step-pendulum)
          (clear-slide)
          (render-pendulum cyan)
@@ -695,28 +735,114 @@
 
      (fn [_]
        (clear-slide)
+       (draw-title yellow "" "Part 3:" "The" "Mandelbrot" "Set" ""))
+
+     (fn [_]
+       (clear-slide)
        (draw-image "Mandelbrot_Set.jpg"))
 
      (fn [_]
        (clear-slide)
        (draw-image "Mandelbrot_Set.jpg")
 
-       (set-origin! 2.2 0)
-       (draw-horizontal-axis)
-       (draw-vertical-axis)
-       (smear-text "0" black (/ height 20) 2.3 0.5 :left 0.025)
-       (draw-text "0" cyan (/ height 20) 2.3 0.5 :left)
-       (draw-text "i" cyan (/ height 20) 2.3 -2.8 :left)
-       (draw-text "-i" cyan (/ height 20) 2.3 3.6 :left)
-       (smear-text "-1" black (/ height 20) -1.0 0.5 :left 0.025)
-       (draw-text "-1" cyan (/ height 20) -1.0 0.5 :left)
-       (draw-text "-2" cyan (/ height 20) -4.3 0.5 :left)
+       (set-origin! 0.7 0)
+       (set-scale! 3.2)
+
+       (draw-axes)
+
+       ;(smear-text "0" black (/ height 20) 0.025 0.14 :left 0.015)
+
+       (set-origin! 0.725 0.14)
+       (smear-text "0" black (/ height 20) 0 0 :left 0.01)
+       (draw-text "0" cyan (/ height 20) 0 0 :left)
+       (draw-text "i" cyan (/ height 20) 0 -1 :left)
+       (draw-text "-i" cyan (/ height 20) 0 1 :left)
+       (smear-text "-1" black (/ height 20) -1 0 :left 0.01)
+       (draw-text "-1" cyan (/ height 20) -1 0 :left)
+       (draw-text "-2" cyan (/ height 20) -2 0 :left)
 
        (unproj-text "z   = z ² + c" yellow (* g-scale 6) (* width 1/4) (* height 1/8) :middle)
        (unproj-text "n" yellow (* g-scale 3) (+ (* width 1/4) (* g-scale 2.2)) (+ (* height 1/8) (* g-scale 1)) :middle)
        (unproj-text "n+1" yellow (* g-scale 3) (- (* width 1/4) (* g-scale 11.5)) (+ (* height 1/8) (* g-scale 1)) :middle)
 
-       (reset-origin!))
+       (reset-origin!)
+       (reset-scale!))
+
+     (fn [_]
+       (draw-axes)
+       (proj-texts (* 4 g-scale) -5 -4 :left "z = 0, " yellow "c = -1" green)
+       (arrow green -1 0 -1 0)
+       (proj-text "0" yellow (* 2 g-scale) -4.75 -3.9 :left)
+       (arrow yellow 0 0 0 0)
+       (proj-text "0 + 0i" yellow (* 4 g-scale) 0 0 :left))
+
+     (fn [n]
+       (draw-axes)
+       (proj-texts (* 4 g-scale) -5 -4 :left "z = 0, " cyan "c = -1" green)
+       (arrow green -1 0 -1 0)
+       (proj-text "0" cyan (* 2 g-scale) -4.75 -3.9 :left)
+       (proj-texts (* 4 g-scale) -5 -3 :left "z = 0² " yellow "-1" green)
+       (proj-text "1" yellow (* 2 g-scale) -4.75 -2.9 :left)
+       (proj-text "z = -1" yellow (* 4 g-scale) -5 -2.5 :left)
+       (proj-text "1" yellow (* 2 g-scale) -4.75 -2.4 :left)
+       (arrow yellow 0 0 -1 0)
+       (proj-text "-1 + 0i" yellow (* 4 g-scale) -1 0 :left))
+
+     (fn [n]
+       (draw-axes)
+       (proj-texts (* 4 g-scale) -5 -4 :left "z = 0, " cyan "c = -1" green)
+       (arrow green -1 0 -1 0)
+       (proj-text "0" cyan (* 2 g-scale) -4.75 -3.9 :left)
+       (proj-text "z = 0² -1" cyan (* 4 g-scale) -5 -3 :left)
+       (proj-text "1" cyan (* 2 g-scale) -4.75 -2.9 :left)
+       (proj-text "z = -1" cyan (* 4 g-scale) -5 -2.5 :left)
+       (proj-text "1" cyan (* 2 g-scale) -4.75 -2.4 :left)
+       (proj-texts (* 4 g-scale) -5 -2 :left "z = -1²" yellow " -1" green)
+       (proj-text "2" yellow (* 2 g-scale) -4.75 -1.9 :left)
+       (proj-text "z = 0" yellow (* 4 g-scale) -5 -1.5 :left)
+       (proj-text "2" yellow (* 2 g-scale) -4.75 -1.4 :left)
+       (arrow yellow -1 0 0 0)
+       (proj-text "0 + 0i" yellow (* 4 g-scale) 0 0 :left))
+
+     ;(fn [n]
+     ;  (draw-axes)
+     ;  (proj-texts (* 4 g-scale) -5 -4 :left "z = 0, " cyan "c = 0.5 + 0.5i" green)
+     ;  (arrow green 0.5 -0.5 0.5 -0.5)
+     ;
+     ;  (let [points (mandelbrot-iterate 0.5 0.5 7)
+     ;        steps (partition 2 1 points)
+     ;        [[prev-r prev-i] [current-r current-i]] (last steps)]
+     ;    (doseq [[[ra ia] [rb ib]] steps]
+     ;      (arrow cyan ra (- ia) rb (- ib)))
+     ;    (arrow yellow prev-r (- prev-i) current-r (- current-i))
+     ;    (proj-text (str current-r " + " current-i "i") yellow (* 4 g-scale) current-r (- current-i) :left)))
+
+     (fn [n] (mandelbrot-step 1 0.5 0.5))
+     (fn [n] (mandelbrot-step 2 0.5 0.5))
+     (fn [n] (mandelbrot-step 3 0.5 0.5))
+     (fn [n] (mandelbrot-step 4 0.5 0.5))
+     (fn [n] (mandelbrot-step 5 0.5 0.5))
+     (fn [n] (mandelbrot-step 6 0.5 0.5))
+     (fn [n] (mandelbrot-step 7 0.5 0.5))
+
+     (fn [n] (mandelbrot-step 1 -0.6 0.6))
+     (fn [n] (mandelbrot-step 2 -0.6 0.6))
+     (fn [n] (mandelbrot-step 3 -0.6 0.6))
+     (fn [n] (mandelbrot-step 4 -0.6 0.6))
+     (fn [n] (mandelbrot-step 5 -0.6 0.6))
+     (fn [n] (mandelbrot-step 6 -0.6 0.6))
+     (fn [n] (mandelbrot-step 7 -0.6 0.6))
+     (fn [n] (mandelbrot-step 8 -0.6 0.6))
+     (fn [n] (mandelbrot-step 9 -0.6 0.6))
+     (fn [n] (mandelbrot-step 10 -0.6 0.6))
+     (fn [n] (mandelbrot-step 11 -0.6 0.6))
+     (fn [n] (mandelbrot-step 12 -0.6 0.6))
+     (fn [n] (mandelbrot-step 13 -0.6 0.6))
+     (fn [n] (mandelbrot-step 14 -0.6 0.6))
+
+     (fn [_]
+       (clear-slide)
+       (draw-title yellow "" "Live!" "Coding!!" "Time!!!" ""))
 
      ]))
 

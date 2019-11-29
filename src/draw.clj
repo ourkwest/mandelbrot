@@ -16,6 +16,9 @@
 (defn palette-of [n]
   (map #(hsb % 1.0 1.0) (range 0 1 (/ 1 n))))
 
+(def high-contrast-palette
+  (take-nth 2 (cycle (palette-of 7))))
+
 (defprotocol Drawable
   (clear [this rgb])
   (pixel [this x y rgb])
