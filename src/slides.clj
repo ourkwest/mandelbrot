@@ -724,12 +724,7 @@
 
      (fn [_]
        (clear-slide)
-       (draw-image "Henon_Attractor.png")
-
-       ;https://commons.wikimedia.org/wiki/File:HenonMapImage.png (Inverted)
-       ; http://artlibre.org/licence/lal/en/
-       ; XaosBits
-       ;(unproj-text "Recoloured Image " yellow (* g-scale 6) (* width 3/4) (* height 1/8) :middle)
+       (draw-image "Henon_Attractor_2.png")
        )
 
 
