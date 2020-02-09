@@ -1,4 +1,5 @@
 (ns mandelbrot
+  "Here's where I was playing with various methods for rendering the mandlebrot set."
   (:require
     [draw :as draw])
   (:import (java.util.concurrent Executors ExecutorService)))

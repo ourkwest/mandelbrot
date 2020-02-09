@@ -1,4 +1,5 @@
 (ns draw
+  "Here's the rendering support code."
   (:require
     [see.core :as see])
   (:import

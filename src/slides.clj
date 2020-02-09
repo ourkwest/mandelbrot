@@ -1,4 +1,6 @@
 (ns slides
+  "Here are the slides. Loading the namespace should create a Java Swing Window and
+  then pressing <left> / <right> should navigate the slides."
   (:require
     [draw :as draw]
     [see.core :as see]
@@ -12,7 +14,7 @@
 
 
 
-(def test-scale-factor 2)
+(def test-scale-factor 2.0)
 
 (def width (* 600 test-scale-factor))
 (def height (* 480 test-scale-factor))
@@ -285,9 +287,14 @@
 
 (def pendulum-fn (volatile! +))
 (defonce rendering-thread
-  (future (while true
-            (@pendulum-fn)
-            (Thread/sleep 60))))
+  (future
+    (while true
+      (try
+        (@pendulum-fn)
+        (Thread/sleep 60)
+        (catch Exception e
+          (.printStackTrace e)
+          (vreset! pendulum-fn +))))))
 
 (defmacro render-loop [& forms]
   `(vreset! pendulum-fn (fn [] ~@forms)))
@@ -393,6 +400,8 @@
     (arrow yellow 0 0 0 0)))
 
 (declare render-slide)
+
+(def colour-cycle (volatile! 0.0))
 
 (def slides
   (remove
@@ -714,17 +723,17 @@
 
      (fn [_]
        (clear-slide)
-       (draw-image "DeJong_Attractor.png")
+       (draw-image "DeJong_Attractor.png") ; Rendered by me.
        )
 
      (fn [_]
        (clear-slide)
-       (draw-image "Hen_On_A_Tractor.png")
+       (draw-image "Hen_On_A_Tractor.png") ; Composited by me based on public domain images, no attribution required.
        )
 
      (fn [_]
        (clear-slide)
-       (draw-image "Henon_Attractor_2.png")
+       (draw-image "Henon_Attractor_2.png") ; Rendered by me.
        )
 
 
@@ -836,8 +845,38 @@
      (fn [n] (mandelbrot-step 14 -0.6 0.6))
 
      (fn [_]
-       (clear-slide)
-       (draw-title yellow "" "Live!" "Coding!!" "Time!!!" ""))
+
+       #_(let [image (ImageIO/read (io/file (str "./resources/SharkBruce.png")))])
+
+       (vreset! colour-cycle 0.0)
+       (render-loop
+
+         (clear-slide)
+
+         (vswap! colour-cycle + 0.03)
+
+         #_(let [g (graphics)
+                 factor (- (Math/cos @colour-cycle))
+                 face-x (/ width 3.2)
+                 face-y (/ height 10)]
+             (.setTransform g (doto (AffineTransform.)
+                                (.translate face-x face-y)
+                                (.rotate (* 9 factor))
+                                (.scale (* 3 (+ 1.1 factor))
+                                        (* 3 (+ 1.1 factor)))
+                                (.translate (- face-x) (- face-y))))
+             (.drawImage g image
+                         0 0 width height
+                         0 0 (.getWidth image) (.getHeight image)
+                         nil))
+
+         (draw-title (draw/hsb (+ @colour-cycle (* TAU 0.1)) 1.0 1.0) "" "" "Live!           " "" "")
+         (draw-title (draw/hsb (+ @colour-cycle (* TAU 0.2)) 1.0 1.0) "" "" "" "Coding!!" "")
+         (draw-title (draw/hsb (+ @colour-cycle (* TAU 0.3)) 1.0 1.0) "" "" "" "" "       Time!!!")
+
+         (update-fn))
+
+       )
 
      ]))
 
