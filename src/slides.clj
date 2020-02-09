@@ -1,6 +1,8 @@
 (ns slides
   "Here are the slides. Loading the namespace should create a Java Swing Window and
-  then pressing <left> / <right> should navigate the slides."
+  then pressing <left> / <right> should navigate the slides.
+
+  There are some notes at the end that roughly equate to talk notes."
   (:require
     [draw :as draw]
     [see.core :as see]

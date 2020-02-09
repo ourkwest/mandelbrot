@@ -1,0 +1,3 @@
+{:deps {github-peterwestmacott/see
+        {:git/url "git@github.com:peterwestmacott/see.git"
+         :sha "baa5511e2a15225476407af043c75dfb5c572772"}}}
